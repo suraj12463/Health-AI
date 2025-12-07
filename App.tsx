@@ -51,27 +51,28 @@ const SkeletonDashboard = () => (
   </div>
 );
 
+// Define steps outside component to ensure stability
+const LOADING_STEPS = [
+  { text: "Securely encrypting & uploading data...", icon: ShieldCheck },
+  { text: "Extracting clinical values & vitals...", icon: Scan },
+  { text: "Analyzing symptoms & medical context...", icon: Stethoscope },
+  { text: "Cross-referencing medical databases...", icon: FileSearch },
+  { text: "Formulating clinical insights...", icon: BrainCircuit }
+];
+
 const LoadingView = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  
-  const steps = [
-    { text: "Securely encrypting & uploading data...", icon: ShieldCheck },
-    { text: "Extracting clinical values & vitals...", icon: Scan },
-    { text: "Analyzing symptoms & medical context...", icon: Stethoscope },
-    { text: "Cross-referencing medical databases...", icon: FileSearch },
-    { text: "Formulating clinical insights...", icon: BrainCircuit }
-  ];
 
   useEffect(() => {
     // Progress through steps, but hold on the last one until done
     const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
+      setCurrentStep((prev) => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
     }, 2500); // 2.5 seconds per step
 
     return () => clearInterval(interval);
   }, []);
 
-  const CurrentIcon = steps[currentStep].icon;
+  const CurrentIcon = LOADING_STEPS[currentStep].icon;
 
   return (
     <div className="relative min-h-[70vh] flex items-center justify-center">
@@ -97,7 +98,7 @@ const LoadingView = () => {
           </div>
 
           <h3 className="text-xl font-bold text-slate-900 mb-2 transition-all duration-300 min-h-[3rem] flex items-center justify-center">
-            {steps[currentStep].text}
+            {LOADING_STEPS[currentStep].text}
           </h3>
           <p className="text-slate-500 text-sm mb-8 max-w-sm mx-auto">
             Our AI is processing your medical data with HIPAA-compliant security protocols.
@@ -105,7 +106,7 @@ const LoadingView = () => {
 
           {/* Progress Checklist */}
           <div className="space-y-3 max-w-sm mx-auto text-left bg-slate-50/80 p-5 rounded-xl border border-slate-100/50">
-            {steps.map((step, idx) => {
+            {LOADING_STEPS.map((step, idx) => {
               const isActive = idx === currentStep;
               const isCompleted = idx < currentStep;
 
@@ -148,8 +149,12 @@ const App: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [savedReports, setSavedReports] = useState<SavedAnalysis[]>(() => {
-    const saved = localStorage.getItem('healthAI_reports');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('healthAI_reports');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
   
   const [analysis, setAnalysis] = useState<AnalysisState>({

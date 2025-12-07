@@ -62,7 +62,7 @@ export const ResultDashboard: React.FC<ResultDashboardProps> = ({ result, onRese
     
     return text.split('\n').map((line, i) => {
       const trimmed = line.trim();
-      if (!trimmed) return <div key={i} className="h-2" />;
+      if (!trimmed) return <div key={`line-${i}`} className="h-2" />;
 
       // Check for bullet points
       const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ');
@@ -72,34 +72,35 @@ export const ResultDashboard: React.FC<ResultDashboardProps> = ({ result, onRese
       const parts = cleanLine.split(/(\*\*.*?\*\*)/g).map((part, j) => {
         if (part.startsWith('**') && part.endsWith('**')) {
           // Keep bold text distinct, but use currentColor opacity for consistency or simple bold class
-          return <strong key={j} className="font-bold text-current opacity-100">{part.slice(2, -2)}</strong>;
+          return <strong key={`bold-${i}-${j}`} className="font-bold text-current opacity-100">{part.slice(2, -2)}</strong>;
         }
         return part;
       });
 
-      // Parse italic (*text*) for Actions
-      const parsedActions = parts.map((part) => {
+      // Parse italic (*text*) for emphasis
+      const parsedContent = parts.map((part, partIdx) => {
         if (typeof part === 'string') {
           return part.split(/(\*.*?\*)/g).map((subPart, k) => {
              if (subPart.startsWith('*') && subPart.endsWith('*') && !subPart.startsWith('**')) {
-                return <em key={k} className="not-italic font-semibold text-current opacity-90">{subPart.slice(1, -1)}</em>;
+                const content = subPart.slice(1, -1);
+                return <em key={`italic-${i}-${partIdx}-${k}`} className="not-italic font-semibold text-current opacity-90">{content}</em>;
              }
-             return subPart;
+             return <React.Fragment key={`text-${i}-${partIdx}-${k}`}>{subPart}</React.Fragment>;
           });
         }
-        return part;
+        return <React.Fragment key={`part-${i}-${partIdx}`}>{part}</React.Fragment>;
       });
 
       if (isBullet) {
         return (
-          <div key={i} className="flex items-start mb-1.5 pl-2">
+          <div key={`bullet-${i}`} className="flex items-start mb-1.5 pl-2">
             <span className={`mr-2 mt-2 h-1 w-1 bg-current rounded-full flex-shrink-0 opacity-60`} />
-            <span className={`${textColor} leading-relaxed`}>{parsedActions}</span>
+            <div className={`${textColor} leading-relaxed w-full`}>{parsedContent}</div>
           </div>
         );
       }
 
-      return <p key={i} className={`mb-1.5 ${textColor} leading-relaxed`}>{parsedActions}</p>;
+      return <div key={`block-${i}`} className={`mb-1.5 ${textColor} leading-relaxed`}>{parsedContent}</div>;
     });
   };
 
@@ -126,7 +127,11 @@ export const ResultDashboard: React.FC<ResultDashboardProps> = ({ result, onRese
           
           step += `\n   - Details: ${s.description}`;
           
-          if (s.interactions) step += `\n   - INTERACTIONS & CONSEQUENCES: ${s.interactions}`;
+          if (s.interactions) {
+             // Clean up tags for text report
+             const cleanInt = s.interactions.replace(/\[(CRITICAL|MAJOR|MODERATE|MINOR)\]/g, (match) => `[${match.replace(/[\[\]]/g, '')}]`);
+             step += `\n   - INTERACTIONS: ${cleanInt}`;
+          }
           if (s.sideEffects) step += `\n   - SIDE EFFECTS: ${s.sideEffects}`;
           if (s.warning) step += `\n   - WARNINGS: ${s.warning}`;
           
@@ -279,7 +284,7 @@ Recommended Action:
             </h5>
             <ul className="space-y-2">
               {items.map((item, idx) => (
-                <li key={idx} className="flex items-start text-sm text-slate-600">
+                <li key={`rf-g-${category}-${idx}`} className="flex items-start text-sm text-slate-600">
                   <div className="h-1.5 w-1.5 rounded-full bg-medical-400 mt-1.5 mr-2.5 flex-shrink-0" />
                   <span className="leading-relaxed">
                     <span className="font-medium text-slate-700">{item.factor}: </span>
@@ -293,7 +298,7 @@ Recommended Action:
         {(!hasGroups || uncategorized.length > 0) && (
            <ul className="space-y-2 mt-4">
             {(hasGroups ? uncategorized : riskFactors).map((item, idx) => (
-              <li key={idx} className="flex items-start text-sm text-slate-600">
+              <li key={`rf-u-${idx}`} className="flex items-start text-sm text-slate-600">
                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300 mt-1.5 mr-2.5 flex-shrink-0" />
                   <span className="leading-relaxed">
                     <span className="font-medium text-slate-700">{item.factor}: </span>
@@ -504,7 +509,7 @@ Recommended Action:
                 <div className="space-y-3">
                   {keyFindings && keyFindings.length > 0 ? (
                     keyFindings.map((finding, idx) => (
-                      <div key={idx} className="flex justify-between items-start border-b border-slate-100 last:border-0 pb-2 last:pb-0">
+                      <div key={`kf-${idx}`} className="flex justify-between items-start border-b border-slate-100 last:border-0 pb-2 last:pb-0">
                         <span className="text-sm font-medium text-slate-500">{finding.label}</span>
                         <span className="text-sm font-bold text-slate-800 text-right ml-2">{finding.value}</span>
                       </div>
@@ -565,7 +570,7 @@ Recommended Action:
                     const encodedAction = encodeURIComponent(actionTitle);
 
                     return (
-                      <div key={idx} className={`border rounded-xl transition-all duration-200 overflow-hidden ${
+                      <div key={`step-${idx}`} className={`border rounded-xl transition-all duration-200 overflow-hidden ${
                         isExpanded ? 'border-medical-200 bg-medical-50/30 shadow-sm' : 'border-slate-200 bg-white hover:border-medical-200'
                       }`}>
                         <button 
@@ -633,9 +638,12 @@ Recommended Action:
                                 </div>
                             )}
 
-                            {/* Interactions Warning Block - REFINED & SPLIT BY SEVERITY */}
+                            {/* Interactions Warning Block - SPLIT BY SEVERITY & MECHANISM */}
                             {interactions && (
-                                <div className="space-y-2">
+                                <div className="mt-3 space-y-2">
+                                   <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center">
+                                      Pharmacovigilance Alerts (Interactions)
+                                   </h5>
                                    {interactions.split('\n').filter(i => i.trim()).map((interactionLine, i) => {
                                       // Detect severity markers from AI
                                       const isCritical = interactionLine.includes('[CRITICAL]') || interactionLine.includes('[MAJOR]');
@@ -644,6 +652,13 @@ Recommended Action:
                                       
                                       // Clean the tags for display
                                       const cleanLine = interactionLine.replace(/\[(CRITICAL|MAJOR|MODERATE|MINOR)\]/g, '').trim();
+                                      
+                                      // Parse ACTION vs EXPLANATION if present (format: "... *Action: ...*")
+                                      // We split by "*Action:" to get the directive separate from the reason
+                                      const actionSplit = cleanLine.split('*Action:');
+                                      const explanationText = actionSplit[0].trim();
+                                      // Remove trailing asterisk from the action part if present
+                                      const actionText = actionSplit.length > 1 ? actionSplit[1].replace(/\*$/, '').trim() : null;
 
                                       let containerClass = 'bg-rose-50 border-rose-100';
                                       let iconClass = 'text-rose-500';
@@ -672,7 +687,7 @@ Recommended Action:
                                       }
 
                                       return (
-                                        <div key={i} className={`rounded-lg p-3 flex gap-3 border ${containerClass}`}>
+                                        <div key={`int-${idx}-${i}`} className={`rounded-lg p-3 flex gap-3 border ${containerClass}`}>
                                           <IconComp className={`h-5 w-5 flex-shrink-0 mt-0.5 ${iconClass}`} />
                                           <div className="w-full">
                                               <div className="flex items-center justify-between mb-1">
@@ -681,13 +696,36 @@ Recommended Action:
                                                 </h5>
                                                 {isCritical && (
                                                   <span className="text-[10px] font-bold bg-red-100 text-red-800 px-1.5 py-0.5 rounded border border-red-200">
-                                                    HIGH RISK
+                                                    CRITICAL
+                                                  </span>
+                                                )}
+                                                {isModerate && (
+                                                  <span className="text-[10px] font-bold bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded border border-orange-200">
+                                                    MODERATE
+                                                  </span>
+                                                )}
+                                                {isMinor && (
+                                                  <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded border border-blue-200">
+                                                    MINOR
                                                   </span>
                                                 )}
                                               </div>
+                                              
+                                              {/* Explanation / Mechanism */}
                                               <div className={`text-sm leading-relaxed whitespace-pre-line ${textClass}`}>
-                                                {formatMedicalText(cleanLine, textClass)}
+                                                {formatMedicalText(explanationText, textClass)}
                                               </div>
+
+                                              {/* Explicit Action Directive */}
+                                              {actionText && (
+                                                  <div className="mt-2 text-xs font-bold bg-white/60 px-3 py-2 rounded-md border border-current border-opacity-20 flex items-start gap-2 shadow-sm">
+                                                      <span className="text-lg leading-none opacity-80">👉</span> 
+                                                      <div className="flex flex-col">
+                                                          <span className="text-[10px] uppercase opacity-70 mb-0.5">Recommended Action</span>
+                                                          <span>{actionText}</span>
+                                                      </div>
+                                                  </div>
+                                              )}
                                           </div>
                                         </div>
                                       );

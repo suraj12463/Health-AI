@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { MedicalAnalysisResult, AnalysisSchema } from '../types';
 
@@ -68,7 +67,7 @@ const analysisSchema: Schema = {
           sideEffects: { type: Type.STRING, description: "Common potential side effects (e.g. 'Drowsiness', 'Nausea')." },
           interactions: { 
             type: Type.STRING, 
-            description: "List drug-drug/drug-food interactions. MUST use tags: [CRITICAL], [MODERATE], [MINOR]. Format: '[TAG] **Interacting Substance**: Mechanism/Consequence. *Action: Recommendation*'." 
+            description: "List drug-drug/drug-food interactions. MUST use tags: [CRITICAL], [MODERATE], [MINOR]. Format: '[TAG] **Interacting Substance**: Detailed Consequence/Mechanism. *Action: Specific Recommendation*'." 
           }
         },
         required: ["action", "description"]
@@ -94,12 +93,12 @@ Your mandate is to provide world-class, clinically accurate, and safety-prioriti
     *   When suggesting medications in 'Suggested Next Steps', you **MUST** check for interactions (Drug-Drug, Drug-Food, Drug-Disease).
     *   **INTERACTIONS FIELD - STRICT 3-TIER FORMATTING:** 
         *   You MUST classify interactions into three strict categories:
-            1.  **[CRITICAL]**: Life-threatening, severe toxicity, or absolute contraindication.
-            2.  **[MODERATE]**: Reduces efficacy, increased side effects, or requires close monitoring.
-            3.  **[MINOR]**: Nuisance effects, slight absorption delays.
-        *   **Required Format:** \`[TAG] **Source**: Clinical Consequence. *Action: Specific Recommendation.*\`
-        *   *Example 1:* \`[CRITICAL] **Grapefruit**: Blocks CYP3A4, causing toxic drug levels. *Action: Do not consume grapefruit while on this medication.*\`
-        *   *Example 2:* \`[MODERATE] **Ibuprofen**: Increases risk of gastrointestinal bleeding. *Action: Monitor for stomach pain; take with food.*\`
+            1.  **[CRITICAL]**: Life-threatening (e.g., Serotonin Syndrome, QT prolongation), severe toxicity, or absolute contraindication.
+            2.  **[MODERATE]**: Clinically significant. Reduces efficacy, increases side effect risk, or requires dose/timing adjustments.
+            3.  **[MINOR]**: Minimal clinical significance. Nuisance effects or slight absorption delays.
+        *   **Required Format:** \`[TAG] **Source**: Detailed Consequence including mechanism (e.g. "Inhibits CYP3A4 metabolism, increasing drug plasma levels"). *Action: Specific Clinical Recommendation.*\`
+        *   **Example 1:** \`[CRITICAL] **Grapefruit**: Inhibits CYP3A4 enzymes, causing dangerous spikes in medication levels which may lead to muscle toxicity. *Action: Strictly avoid grapefruit and grapefruit juice.*\`
+        *   **Example 2:** \`[MODERATE] **Calcium/Dairy**: Binds to the medication in the gut (chelation), preventing absorption. *Action: Take this medication 2 hours before or 4 hours after consuming dairy or calcium supplements.*\`
     *   **Side Effects:** Explicitly list common side effects in the 'sideEffects' field.
     *   **Dosage Precision:** Provide standard *adult reference dosages* only, always followed by "or as prescribed".
 
