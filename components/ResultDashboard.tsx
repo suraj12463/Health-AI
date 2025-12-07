@@ -593,6 +593,12 @@ Recommended Action:
                                      {hasCriticalInteractions ? 'Critical Interactions' : 'Interactions'}
                                    </span>
                                 )}
+                                {sideEffects && !isExpanded && (
+                                   <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200" title="Potential side effects listed">
+                                     <AlertCircle className="h-3 w-3 mr-1" />
+                                     Side Effects
+                                   </span>
+                                )}
                             </div>
                           </div>
                           {isExpanded ? <ChevronUp className="h-4 w-4 text-medical-500" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
