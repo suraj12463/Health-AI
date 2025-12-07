@@ -167,7 +167,8 @@ const CATEGORIES = {
 export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClose, onSelect }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('All');
+  // Use a Set to track multiple selected categories. Initialize with 'All'.
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set(['All']));
 
   if (!isOpen) return null;
 
@@ -185,12 +186,41 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
     onSelect(Array.from(selected));
     setSelected(new Set()); // Reset
     setSearchQuery('');
-    setActiveCategory('All');
+    setActiveCategories(new Set(['All']));
     onClose();
   };
 
   const clearSearch = () => {
     setSearchQuery('');
+  };
+
+  const toggleCategory = (cat: string) => {
+    const newCats = new Set(activeCategories);
+
+    if (cat === 'All') {
+      // If All is clicked, clear others and set only All
+      setActiveCategories(new Set(['All']));
+      return;
+    }
+
+    // If specific category is clicked, remove 'All' if it exists
+    if (newCats.has('All')) {
+      newCats.delete('All');
+    }
+
+    // Toggle the clicked category
+    if (newCats.has(cat)) {
+      newCats.delete(cat);
+    } else {
+      newCats.add(cat);
+    }
+
+    // If no categories remain selected, default back to 'All'
+    if (newCats.size === 0) {
+      setActiveCategories(new Set(['All']));
+    } else {
+      setActiveCategories(newCats);
+    }
   };
 
   const categoryKeys = ['All', ...Object.keys(CATEGORIES)];
@@ -200,7 +230,8 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
   const displayedCategories = useMemo(() => {
     return Object.entries(CATEGORIES).map(([category, data]) => {
       // 1. Filter by Active Category Selection
-      if (activeCategory !== 'All' && category !== activeCategory) {
+      const isAll = activeCategories.has('All');
+      if (!isAll && !activeCategories.has(category)) {
         return null;
       }
   
@@ -246,7 +277,7 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
       
       return null;
     }).filter(Boolean) as [string, typeof CATEGORIES['General']][];
-  }, [searchQuery, activeCategory]);
+  }, [searchQuery, activeCategories]);
 
   const hasResults = displayedCategories.length > 0;
 
@@ -301,21 +332,25 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
               <div className="flex items-center pr-2 border-r border-slate-200 mr-2 flex-shrink-0">
                 <Filter className="w-4 h-4 text-slate-400" />
               </div>
-              {categoryKeys.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`
-                    flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap
-                    ${activeCategory === cat 
-                      ? 'bg-medical-600 text-white shadow-sm ring-2 ring-medical-100 ring-offset-1' 
-                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                    }
-                  `}
-                >
-                  {cat}
-                </button>
-              ))}
+              {categoryKeys.map((cat) => {
+                const isActive = activeCategories.has(cat);
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={`
+                      flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center border
+                      ${isActive 
+                        ? 'bg-medical-600 text-white border-medical-600 shadow-sm ring-2 ring-medical-100 ring-offset-1' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                      }
+                    `}
+                  >
+                    {isActive && <Check className="w-3 h-3 mr-1.5" />}
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -323,7 +358,7 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
         <div className="overflow-y-auto p-6 custom-scrollbar flex-1">
           
           {/* Common Symptoms Section - Grouped by Condition (Only show if not searching/filtering) */}
-          {!searchQuery && activeCategory === 'All' && (
+          {!searchQuery && activeCategories.has('All') && (
             <div className="mb-8 space-y-4">
               <div className="flex items-center space-x-2 text-slate-800 font-semibold border-b border-slate-100 pb-2">
                 <span className="text-amber-500 bg-amber-50 p-1.5 rounded-lg">
@@ -361,7 +396,7 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
           )}
 
           {hasResults ? (
-            <div className={`grid grid-cols-1 ${activeCategory === 'All' ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-8`}>
+            <div className={`grid grid-cols-1 ${activeCategories.has('All') ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-8`}>
               {displayedCategories.map(([category, { icon, items }]) => (
                 <div key={category} className="space-y-3">
                   <div className="flex items-center space-x-2 text-slate-800 font-semibold border-b border-slate-100 pb-2 mb-3">
@@ -396,7 +431,7 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({ isOpen, onClos
               </div>
               <p className="font-medium text-slate-900">No symptoms found</p>
               <p className="text-sm mt-1 max-w-xs">
-                We couldn't find matches for "{searchQuery}" {activeCategory !== 'All' ? `in ${activeCategory}` : ''}.
+                We couldn't find matches for "{searchQuery}" {activeCategories.size > 0 && !activeCategories.has('All') ? `in selected categories` : ''}.
               </p>
               <p className="text-xs text-slate-400 mt-2">
                 Tip: Try using common terms like "tummy ache" or "tired".
