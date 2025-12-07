@@ -1,0 +1,5 @@
+{
+  "name": "HealthAI",
+  "description": "An AI-powered medical report analyzer and treatment planner that helps users interpret medical data, assess risks, and understand potential treatments using advanced clinical reasoning and grounded medical search.",
+  "requestFramePermissions": []
+}
